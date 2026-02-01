@@ -36,10 +36,16 @@ class Neg(ExprNode):
 
     def simplify(self):
         val = self.val.simplify()
-        if isinstance(val, Const) and val.num == 0:
+        if isinstance(val, Const):
             return Const(-val.num)
         if isinstance(val, Neg):
             return val.val
+        if isinstance(val, Add):
+            return Add(*[Neg(arg) for arg in val.args]).simplify()
+        if isinstance(val, Mul):
+            n_args = list(val.args)
+            n_args[0] = Neg(n_args[0])
+            return Mul(*n_args).simplify()
 
         return Neg(val)
 
@@ -137,36 +143,10 @@ class Mul(ExprNode):
         return Mul(*new_args)
 
 
-class Div(ExprNode):
-    def __init__(self, a, b): self.a, self.b = a, b
-    def __repr__(self): return f"Div({self.a}, {self.b})"
-    def __str__(self): return f"({self.a} / {self.b})"
-
-    def eval(self, env): return self.a.eval(env) / self.b.eval(env)
-    def diff(self, d_var): return Div(
-        Add(
-            Mul(self.a.diff(d_var), self.b),
-            Neg(Mul(self.a, self.b.diff(d_var))),
-        ),
-        Mul(self.b, self.b)
-    )
-
-    def simplify(self):
-        a, b = self.a.simplify(), self.b.simplify()
-        if isinstance(a, Const) and a.num == 0:
-            return Const(0)
-        if isinstance(b, Const) and b.num == 1:
-            return a
-        if isinstance(a, Const) and isinstance(b, Const):
-            return Const(a.num / b.num)
-
-        return Div(a, b)
-
-
 class Pow(ExprNode):
     def __init__(self, base, power): self.base, self.power = base, power
     def __repr__(self): return f"Pow({self.base}, {self.power})"
-    def __str__(self): return f"({self.base} ** {self.power})"
+    def __str__(self): return f"({self.base} ^ {self.power})"
 
     def eval(self, env): return self.base.eval(env) ** self.power.eval(env)
     def diff(self, d_var):
