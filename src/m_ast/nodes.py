@@ -143,6 +143,36 @@ class Mul(ExprNode):
         return Mul(*new_args)
 
 
+class Div(ExprNode):
+    def __init__(self, num, den): self.num, self.den = num, den
+    def __repr__(self): return f"Div({self.num}, {self.den})"
+    def __str__(self): return f"({self.num} / {self.den})"
+
+    def eval(self, env): pass
+    def diff(self, d):
+        return Div(
+            Add(
+                Mul(self.num.diff(d), self.den),
+                Neg(Mul(self.num, self.den.diff(d)))
+            ),
+            Pow(self.den, Const(2))
+        )
+
+    def simplify(self):
+        num = self.num.simplify()
+        den = self.den.simplify()
+
+        if isinstance(num, Const) and num.num == 0:
+            return Const(0)
+        if isinstance(den, Const) and den.num == 1:
+            return num
+        if isinstance(num, Const) and isinstance(den, Const):
+            return Const(num.num / den.num)
+
+        return Div(num, den)
+
+
+
 class Pow(ExprNode):
     def __init__(self, base, power): self.base, self.power = base, power
     def __repr__(self): return f"Pow({self.base}, {self.power})"
@@ -173,3 +203,48 @@ class Pow(ExprNode):
             return a
 
         return Pow(a, b)
+
+
+class Log(ExprNode):
+    def __init__(self, arg, base=Const(math.e)): self.arg, self.base = arg, base
+    def __repr__(self): return f"Log({self.arg}, {self.base})"
+    def __str__(self):
+        if self.base.num == math.e:
+            return f"ln({self.arg})"
+        elif self.base.num == int(self.base.num):
+            return f"log{self.base}({self.arg})"
+        elif isinstance(self.base, Const):
+            return f"log_{self.base}({self.arg})"
+
+        return f"log_({self.base})({self.arg})"
+
+    def eval(self, env): return math.log(self.arg.eval(env)) / math.log(self.base.eval(env))
+    def diff(self, d_var):
+        helper = Mul(
+            self.arg.diff(d_var),
+            Pow(Mul(self.arg,Log(self.base)), -1)
+        )
+
+        if isinstance(self.base, Const):
+            return helper
+        else:
+            return Add(
+                helper,
+                Neg(Mul(
+                    Mul(self.base.diff(d_var), Log(self.arg)),
+                    Div(self.base, Pow(Log(self.base),2))
+                ))
+            )
+
+    def simplify(self):
+        arg = self.arg.simplify()
+        base = self.base.simplify()
+
+        if isinstance(arg, Const) and arg.num == 0:
+            return Const(1)
+        elif isinstance(arg, Const) and arg.num == 1:
+            return base
+        if isinstance(arg, Const) and isinstance(base, Const):
+            return Const(math.log(arg.num, base.num))
+
+        return Log(arg, base)

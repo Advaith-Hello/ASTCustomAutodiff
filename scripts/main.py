@@ -10,5 +10,5 @@ result = AST.eval({"x": 3, "y": 4})
 print(result)
 
 # Finds the derivative with respect to x
-AST_D = AST.diff("y").simplify()
+AST_D = AST.diff("x").simplify()
 print(AST_D)
