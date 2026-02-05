@@ -148,7 +148,7 @@ class Div(ExprNode):
     def __repr__(self): return f"Div({self.num}, {self.den})"
     def __str__(self): return f"({self.num} / {self.den})"
 
-    def eval(self, env): pass
+    def eval(self, env): self.num.eval(env) / self.den.eval(env)
     def diff(self, d):
         return Div(
             Add(

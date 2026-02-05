@@ -1,9 +1,20 @@
+import time
+
 from parse.parse import parse
+from compile.compile import compile_expr
 
 
-AST = parse("7x^9 - 5x^8 + 7x^7 - 6x^6 + 9x^5 - 2x^4 + 3x^3 - 2x^2 + 6x - 8")
-print("Original:", AST)
 
-for i in range(10):
-    AST = AST.diff("x").simplify()
-    print(f"AST (d/dx)^{i+1}:", AST)
+AST = parse("2x^2")
+print(repr(AST))
+
+f = compile_expr(AST)
+print(f(-10))
+
+s = time.perf_counter()
+
+for i in range(10_000_000):
+    f(i)
+
+e = time.perf_counter()
+print(e-s)
